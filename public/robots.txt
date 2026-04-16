@@ -1,0 +1,16 @@
+# robots.txt for Cuhvet
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://ads.cuhvet.com/sitemap.xml
+
+# Crawl-delay for specific bots (optional)
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
