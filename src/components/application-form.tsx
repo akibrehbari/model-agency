@@ -1,86 +1,138 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { motion, useInView } from "framer-motion";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Shield,
-  Lock,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, Shield, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
-interface FormData {
-  fullName: string;
-  email: string;
-  phone: string;
-  age: string;
-  location: string;
-  instagram: string;
-  experience: string;
-  motivation: string;
+// ---------------------------------------------------------------------------
+// Validation schema
+// ---------------------------------------------------------------------------
+
+const schema = z.object({
+  fullName: z
+    .string()
+    .min(2, "Full name must be at least 2 characters")
+    .max(80, "Full name must be 80 characters or fewer")
+    .regex(/^[a-zA-Z\s'-]+$/, "Full name can only contain letters, spaces, hyphens, and apostrophes"),
+
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+
+  phone: z
+    .string()
+    .min(1, "Phone number is required")
+    .regex(
+      /^\+?[\d\s\-().]{7,20}$/,
+      "Please enter a valid phone number (e.g. +1 555 000-0000)"
+    ),
+
+  age: z
+    .string()
+    .min(1, "Please select your age")
+    .refine((v) => {
+      const n = parseInt(v, 10);
+      return n >= 18 && n <= 45;
+    }, "You must be between 18 and 45 years old to apply"),
+
+  location: z
+    .string()
+    .min(2, "Location must be at least 2 characters")
+    .max(100, "Location must be 100 characters or fewer"),
+
+  instagram: z
+    .string()
+    .refine(
+      (v) => v.trim() === "" || /^@?[\w.]{1,30}$/.test(v.trim()),
+      "Please enter a valid Instagram handle (e.g. @yourusername)"
+    ),
+
+  experience: z
+    .string()
+    .min(1, "Please select your experience level"),
+
+  motivation: z
+    .string()
+    .min(30, "Please write at least 30 characters so we can get to know you")
+    .max(1000, "Motivation must be 1,000 characters or fewer"),
+});
+
+type FormValues = z.output<typeof schema>;
+
+// ---------------------------------------------------------------------------
+// Small helper — renders a red error message beneath a field
+// ---------------------------------------------------------------------------
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p className="text-rose-400 text-xs mt-1 flex items-center gap-1">
+      <span aria-hidden>✕</span>
+      {message}
+    </p>
+  );
 }
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export default function ApplicationForm() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const [formData, setFormData] = useState<FormData>({
-    fullName: "",
-    email: "",
-    phone: "",
-    age: "",
-    location: "",
-    instagram: "",
-    experience: "",
-    motivation: "",
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [serverError, setServerError] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    mode: "onTouched", // validate a field once the user has interacted with it
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError("");
-
+  const onSubmit = async (data: FormValues) => {
+    setServerError("");
     try {
       const response = await fetch("/api/submit-application", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to submit application");
+        const json = await response.json().catch(() => ({}));
+        throw new Error(json?.error ?? "Failed to submit application");
       }
 
       setIsSubmitted(true);
     } catch (err) {
-      setError("Failed to submit application. Please try again.");
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
+      setServerError(
+        err instanceof Error
+          ? err.message
+          : "Failed to submit application. Please try again."
+      );
     }
   };
 
+  // ── Success state ──────────────────────────────────────────────────────────
   if (isSubmitted) {
     return (
-      <section id="apply" className="py-24 lg:py-32 px-6 md:px-12 lg:px-24 bg-black">
+      <section
+        id="apply"
+        className="py-24 lg:py-32 px-6 md:px-12 lg:px-24 bg-black"
+      >
         <div className="max-w-2xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -96,7 +148,7 @@ export default function ApplicationForm() {
             </h2>
             <p className="text-white/60 text-lg leading-relaxed mb-2">
               Thank you for your interest in joining Cuhvet. Our team will
-              review your application and get back to you within 24-48 hours.
+              review your application and get back to you within 24–48 hours.
             </p>
             <p className="text-rose-400 text-sm font-medium">
               Check your email for a confirmation.
@@ -107,20 +159,22 @@ export default function ApplicationForm() {
     );
   }
 
+  // ── Form ──────────────────────────────────────────────────────────────────
   return (
     <section
       id="apply"
       ref={ref}
       className="py-24 lg:py-32 px-6 md:px-12 lg:px-24 bg-black relative overflow-hidden"
     >
+      {/* Background decoration */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rose-500/20 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-rose-500/20 to-transparent" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-rose-600/5 rounded-full blur-[200px]" />
       </div>
 
       <div className="relative mx-auto max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16">
-          {/* Left — Info */}
+          {/* ── Left — Info ─────────────────────────────────────────────────── */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -138,8 +192,8 @@ export default function ApplicationForm() {
                 </span>
               </h2>
               <p className="text-white/50 text-lg leading-relaxed">
-                Fill out the application below. It only takes a few minutes, and
-                our team will personally review every submission.
+                Fill out the application below. It only takes a few minutes,
+                and our team will personally review every submission.
               </p>
             </div>
 
@@ -148,7 +202,7 @@ export default function ApplicationForm() {
                 What We Look For
               </h3>
               {[
-                "Age 18+ (primary focus: 24-30)",
+                "Age 18+ (primary focus: 24–45)",
                 "Willingness to learn and grow",
                 "Consistency and dedication",
                 "Professional attitude",
@@ -161,7 +215,7 @@ export default function ApplicationForm() {
               ))}
             </div>
 
-            {/* Privacy — Material card */}
+            {/* Privacy card */}
             <div className="bg-black rounded-2xl p-6 space-y-3 border border-white/10">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-emerald-400" />
@@ -182,118 +236,130 @@ export default function ApplicationForm() {
             </div>
           </motion.div>
 
-          {/* Right — Form (Material card) */}
+          {/* ── Right — Form ────────────────────────────────────────────────── */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.2 }}
             className="lg:col-span-3"
           >
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-6"
-            >
-              {error && (
+            <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
+              {/* Server-level error banner */}
+              {serverError && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                  <p className="text-red-400 text-sm">{error}</p>
+                  <p className="text-red-400 text-sm">{serverError}</p>
                 </div>
               )}
 
-              {/* Personal Info — Material filled inputs */}
+              {/* ── Row 1: Full Name + Email ─────────────────────────────── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="fullName">Full Name *</Label>
+                  <Label htmlFor="fullName">
+                    Full Name <span className="text-rose-400">*</span>
+                  </Label>
                   <Input
                     id="fullName"
-                    name="fullName"
                     placeholder="Your full name"
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    required
+                    aria-invalid={!!errors.fullName}
+                    {...register("fullName")}
                   />
+                  <FieldError message={errors.fullName?.message} />
                 </div>
+
                 <div className="space-y-1.5">
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="email">
+                    Email <span className="text-rose-400">*</span>
+                  </Label>
                   <Input
                     id="email"
-                    name="email"
                     type="email"
                     placeholder="your@email.com"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
+                    aria-invalid={!!errors.email}
+                    {...register("email")}
                   />
+                  <FieldError message={errors.email?.message} />
                 </div>
               </div>
 
+              {/* ── Row 2: Phone + Age + Location ───────────────────────── */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Label htmlFor="phone">
+                    Phone Number <span className="text-rose-400">*</span>
+                  </Label>
                   <Input
                     id="phone"
-                    name="phone"
                     type="tel"
                     placeholder="+1 (555) 000-0000"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    required
+                    aria-invalid={!!errors.phone}
+                    {...register("phone")}
                   />
+                  <FieldError message={errors.phone?.message} />
                 </div>
+
                 <div className="space-y-1.5">
-                  <Label htmlFor="age">Age *</Label>
+                  <Label htmlFor="age">
+                    Age <span className="text-rose-400">*</span>
+                  </Label>
                   <select
                     id="age"
-                    name="age"
-                    value={formData.age}
-                    onChange={handleChange}
-                    required
-                    className="flex h-14 w-full rounded-lg bg-white/[0.08] border-0 border-b-2 border-white/20 px-4 pt-5 pb-2 text-base text-white focus:border-b-rose-500 focus:bg-white/[0.12] focus:outline-none transition-all duration-200"
+                    aria-invalid={!!errors.age}
+                    className="flex h-14 w-full rounded-lg bg-white/8 border-0 border-b-2 border-white/20 px-4 pt-5 pb-2 text-base text-white focus:border-b-rose-500 focus:bg-white/12 focus:outline-none transition-all duration-200"
+                    {...register("age")}
                   >
                     <option value="" className="bg-gray-900">
                       Select age
                     </option>
-                    {Array.from({ length: 13 }, (_, i) => i + 18).map(
-                      (age) => (
-                        <option key={age} value={age} className="bg-gray-900">
-                          {age}
-                        </option>
-                      )
-                    )}
+                    {Array.from({ length: 28 }, (_, i) => i + 18).map((a) => (
+                      <option key={a} value={a} className="bg-gray-900">
+                        {a}
+                      </option>
+                    ))}
                   </select>
+                  <FieldError message={errors.age?.message} />
                 </div>
+
                 <div className="space-y-1.5">
-                  <Label htmlFor="location">Location *</Label>
+                  <Label htmlFor="location">
+                    Location <span className="text-rose-400">*</span>
+                  </Label>
                   <Input
                     id="location"
-                    name="location"
                     placeholder="City, State"
-                    value={formData.location}
-                    onChange={handleChange}
-                    required
+                    aria-invalid={!!errors.location}
+                    {...register("location")}
                   />
+                  <FieldError message={errors.location?.message} />
                 </div>
               </div>
 
+              {/* ── Instagram (optional) ────────────────────────────────── */}
               <div className="space-y-1.5">
-                <Label htmlFor="instagram">Instagram Handle</Label>
+                <Label htmlFor="instagram">
+                  Instagram Handle{" "}
+                  <span className="text-white/30 text-xs font-normal">
+                    (optional)
+                  </span>
+                </Label>
                 <Input
                   id="instagram"
-                  name="instagram"
                   placeholder="@yourusername"
-                  value={formData.instagram}
-                  onChange={handleChange}
+                  aria-invalid={!!errors.instagram}
+                  {...register("instagram")}
                 />
+                <FieldError message={errors.instagram?.message} />
               </div>
 
+              {/* ── Experience ──────────────────────────────────────────── */}
               <div className="space-y-1.5">
-                <Label htmlFor="experience">Experience *</Label>
+                <Label htmlFor="experience">
+                  Experience <span className="text-rose-400">*</span>
+                </Label>
                 <select
                   id="experience"
-                  name="experience"
-                  value={formData.experience}
-                  onChange={handleChange}
-                  required
-                  className="flex h-14 w-full rounded-lg bg-white/[0.08] border-0 border-b-2 border-white/20 px-4 pt-5 pb-2 text-base text-white focus:border-b-rose-500 focus:bg-white/[0.12] focus:outline-none transition-all duration-200"
+                  aria-invalid={!!errors.experience}
+                  className="flex h-14 w-full rounded-lg bg-white/8 border-0 border-b-2 border-white/20 px-4 pt-5 pb-2 text-base text-white focus:border-b-rose-500 focus:bg-white/12 focus:outline-none transition-all duration-200"
+                  {...register("experience")}
                 >
                   <option value="" className="bg-gray-900">
                     Select your experience level
@@ -302,7 +368,7 @@ export default function ApplicationForm() {
                     No experience — completely new
                   </option>
                   <option value="some" className="bg-gray-900">
-                    Some experience (hobby/part-time)
+                    Some experience (hobby / part-time)
                   </option>
                   <option value="experienced" className="bg-gray-900">
                     Experienced (1+ years)
@@ -311,24 +377,26 @@ export default function ApplicationForm() {
                     Professional (full-time creator)
                   </option>
                 </select>
+                <FieldError message={errors.experience?.message} />
               </div>
 
+              {/* ── Motivation ──────────────────────────────────────────── */}
               <div className="space-y-1.5">
                 <Label htmlFor="motivation">
-                  Why do you want to become a model? *
+                  Why do you want to become a model?{" "}
+                  <span className="text-rose-400">*</span>
                 </Label>
                 <Textarea
                   id="motivation"
-                  name="motivation"
-                  placeholder="Tell us about yourself, your goals, and what motivates you..."
-                  value={formData.motivation}
-                  onChange={handleChange}
-                  required
-                  className="min-h-[100px]"
+                  placeholder="Tell us about yourself, your goals, and what motivates you… (minimum 30 characters)"
+                  aria-invalid={!!errors.motivation}
+                  className="min-h-[120px]"
+                  {...register("motivation")}
                 />
+                <FieldError message={errors.motivation?.message} />
               </div>
 
-              {/* Submit */}
+              {/* ── Submit ──────────────────────────────────────────────── */}
               <div className="pt-4">
                 <Button
                   type="submit"
@@ -357,7 +425,7 @@ export default function ApplicationForm() {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         />
                       </svg>
-                      Submitting Application...
+                      Submitting Application…
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
