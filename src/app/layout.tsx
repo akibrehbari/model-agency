@@ -57,15 +57,6 @@ export const metadata: Metadata = {
       },
     ],
   },
-  twitter: {
-    card: "summary_large_image",
-    site: "@cuhvet",
-    creator: "@cuhvet",
-    title: "Cuhvet | Get Seen. Get Paid",
-    description:
-      "Launch your modeling career with professional support. Join 500+ models earning $3K-$20K+/month. Apply now.",
-    images: ["/logo.png"],
-  },
   robots: {
     index: true,
     follow: true,
@@ -149,8 +140,6 @@ export default function RootLayout({
               email: "hello@cuhvet.com",
               sameAs: [
                 "https://instagram.com/cuhvet",
-                "https://twitter.com/cuhvet",
-                "https://tiktok.com/@cuhvet",
               ],
               contactPoint: {
                 "@type": "ContactPoint",

@@ -14,17 +14,12 @@ This document outlines all SEO optimizations implemented for cuhvet.com.
 - OG image: `/og-image.jpg` (1200x630px recommended)
 - Proper siteName and locale settings
 
-## 3. Twitter Cards
-- Summary large image card type
-- Twitter handle: @cuhvet
-- Optimized title and description for Twitter sharing
-
-## 4. Structured Data (JSON-LD)
+## 3. Structured Data (JSON-LD)
 
 ### Organization Schema (`layout.tsx`)
 - Company name, URL, logo
 - Contact information
-- Social media profiles
+- Social media profiles (Instagram)
 - Contact point for customer service
 
 ### Website Schema (`page.tsx`)

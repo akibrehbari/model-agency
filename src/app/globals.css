@@ -120,7 +120,11 @@
   }
   html {
     overflow-x: hidden;
-    scroll-behavior: smooth;
+  }
+  @media (min-width: 768px) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
   html.lenis {
     height: auto;

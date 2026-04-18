@@ -37,7 +37,8 @@ export default function HowItWorks() {
 
   const scrollToApply = () => {
     const el = document.querySelector("#apply");
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    const isMobile = window.innerWidth < 768;
+    if (el) el.scrollIntoView({ behavior: isMobile ? "auto" : "smooth" });
   };
 
   const howToSchema = {

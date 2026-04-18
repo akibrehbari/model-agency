@@ -17,8 +17,6 @@ const footerLinks = {
   ],
   social: [
     { label: "Instagram", href: "#" },
-    { label: "TikTok", href: "#" },
-    { label: "Twitter/X", href: "#" },
   ],
 };
 
@@ -26,7 +24,8 @@ export default function Footer() {
   const scrollToSection = (href: string) => {
     if (href.startsWith("#")) {
       const el = document.querySelector(href);
-      if (el) el.scrollIntoView({ behavior: "smooth" });
+      const isMobile = window.innerWidth < 768;
+      if (el) el.scrollIntoView({ behavior: isMobile ? "auto" : "smooth" });
     }
   };
 

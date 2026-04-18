@@ -32,7 +32,8 @@ export default function Navbar() {
   const scrollToSection = (href: string) => {
     setIsOpen(false);
     const el = document.querySelector(href);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    const isMobile = window.innerWidth < 768;
+    if (el) el.scrollIntoView({ behavior: isMobile ? "auto" : "smooth" });
   };
 
   return (
@@ -47,7 +48,10 @@ export default function Navbar() {
         <div className="mx-auto px-6 lg:px-24 py-4 lg:py-5">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              onClick={() => {
+                const isMobile = window.innerWidth < 768;
+                window.scrollTo({ top: 0, behavior: isMobile ? "auto" : "smooth" });
+              }}
               className="relative h-10 w-auto"
             >
               <Image
