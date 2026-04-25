@@ -41,8 +41,8 @@ const schema = z.object({
     .min(1, "Please select your age")
     .refine((v) => {
       const n = parseInt(v, 10);
-      return n >= 18 && n <= 45;
-    }, "You must be between 18 and 45 years old to apply"),
+      return n >= 18 && n <= 30;
+    }, "You must be between 18 and 30 years old to apply"),
 
   location: z
     .string()
@@ -51,8 +51,9 @@ const schema = z.object({
 
   instagram: z
     .string()
+    .min(1, "Instagram handle is required")
     .refine(
-      (v) => v.trim() === "" || /^@?[\w.]{1,30}$/.test(v.trim()),
+      (v) => /^@?[\w.]{1,30}$/.test(v.trim()),
       "Please enter a valid Instagram handle (e.g. @yourusername)"
     ),
 
@@ -310,7 +311,7 @@ export default function ApplicationForm() {
                     <option value="" className="bg-gray-900">
                       Select age
                     </option>
-                    {Array.from({ length: 28 }, (_, i) => i + 18).map((a) => (
+                    {Array.from({ length: 13 }, (_, i) => i + 18).map((a) => (
                       <option key={a} value={a} className="bg-gray-900">
                         {a}
                       </option>
@@ -333,13 +334,10 @@ export default function ApplicationForm() {
                 </div>
               </div>
 
-              {/* ── Instagram (optional) ────────────────────────────────── */}
+              {/* ── Instagram ────────────────────────────────── */}
               <div className="space-y-1.5">
                 <Label htmlFor="instagram">
-                  Instagram Handle{" "}
-                  <span className="text-white/30 text-xs font-normal">
-                    (optional)
-                  </span>
+                  Instagram Handle <span className="text-rose-400">*</span>
                 </Label>
                 <Input
                   id="instagram"
