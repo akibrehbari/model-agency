@@ -1,16 +1,40 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, useInView } from "framer-motion";
-import { ArrowRight, CheckCircle2, Shield, Lock } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Shield,
+  Lock,
+  Upload,
+  X,
+  Image as ImageIcon,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+
+// ---------------------------------------------------------------------------
+// Image upload constraints
+// ---------------------------------------------------------------------------
+
+const MAX_PHOTOS = 5;
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB per file
+const MAX_TOTAL_BYTES = 25 * 1024 * 1024; // 25 MB combined
+const ACCEPTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+];
+const ACCEPT_ATTR = ACCEPTED_IMAGE_TYPES.join(",");
 
 // ---------------------------------------------------------------------------
 // Validation schema
@@ -70,7 +94,7 @@ const schema = z.object({
 type FormValues = z.output<typeof schema>;
 
 // ---------------------------------------------------------------------------
-// Small helper — renders a red error message beneath a field
+// Helpers
 // ---------------------------------------------------------------------------
 
 function FieldError({ message }: { message?: string }) {
@@ -81,6 +105,12 @@ function FieldError({ message }: { message?: string }) {
       {message}
     </p>
   );
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 // ---------------------------------------------------------------------------
@@ -94,22 +124,82 @@ export default function ApplicationForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [serverError, setServerError] = useState("");
 
+  // Photos state — managed manually (outside react-hook-form)
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoError, setPhotoError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Generate object URLs for previews and clean them up on change/unmount
+  const [previews, setPreviews] = useState<string[]>([]);
+  useEffect(() => {
+    const urls = photos.map((file) => URL.createObjectURL(file));
+    setPreviews(urls);
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [photos]);
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    mode: "onTouched", // validate a field once the user has interacted with it
+    mode: "onTouched",
   });
+
+  function handleFilesSelected(files: FileList | null) {
+    setPhotoError("");
+    if (!files || files.length === 0) return;
+
+    const incoming = Array.from(files);
+    const merged: File[] = [...photos];
+
+    for (const file of incoming) {
+      if (merged.length >= MAX_PHOTOS) {
+        setPhotoError(`You can upload up to ${MAX_PHOTOS} photos.`);
+        break;
+      }
+      if (!ACCEPTED_IMAGE_TYPES.includes(file.type) && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) {
+        setPhotoError("Only JPG, PNG, WEBP, or HEIC images are allowed.");
+        continue;
+      }
+      if (file.size > MAX_PHOTO_BYTES) {
+        setPhotoError(`Each photo must be ${formatBytes(MAX_PHOTO_BYTES)} or smaller.`);
+        continue;
+      }
+      // Skip exact duplicates (same name + size)
+      if (merged.some((f) => f.name === file.name && f.size === file.size)) continue;
+      merged.push(file);
+    }
+
+    const totalBytes = merged.reduce((sum, f) => sum + f.size, 0);
+    if (totalBytes > MAX_TOTAL_BYTES) {
+      setPhotoError(`Combined photo size must be under ${formatBytes(MAX_TOTAL_BYTES)}.`);
+      return;
+    }
+
+    setPhotos(merged);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function removePhoto(index: number) {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+    setPhotoError("");
+  }
 
   const onSubmit = async (data: FormValues) => {
     setServerError("");
     try {
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        formData.append(key, String(value ?? ""));
+      });
+      photos.forEach((file) => formData.append("photos", file, file.name));
+
       const response = await fetch("/api/submit-application", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -392,6 +482,78 @@ export default function ApplicationForm() {
                   {...register("motivation")}
                 />
                 <FieldError message={errors.motivation?.message} />
+              </div>
+
+              {/* ── Photos ──────────────────────────────────────────────── */}
+              <div className="space-y-2">
+                <Label htmlFor="photos">
+                  Photos{" "}
+                  <span className="text-white/40 text-xs font-normal">
+                    (optional — up to {MAX_PHOTOS}, max {formatBytes(MAX_PHOTO_BYTES)} each)
+                  </span>
+                </Label>
+
+                <label
+                  htmlFor="photos"
+                  className="flex flex-col items-center justify-center gap-2 w-full min-h-[120px] rounded-lg border-2 border-dashed border-white/20 bg-white/4 hover:bg-white/8 hover:border-rose-500/50 transition-all duration-200 cursor-pointer p-6 text-center"
+                >
+                  <Upload className="w-6 h-6 text-white/50" />
+                  <span className="text-white/70 text-sm font-medium">
+                    Click to upload photos
+                  </span>
+                  <span className="text-white/40 text-xs">
+                    JPG, PNG, WEBP, or HEIC
+                  </span>
+                </label>
+
+                <input
+                  id="photos"
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept={ACCEPT_ATTR}
+                  className="sr-only"
+                  onChange={(e) => handleFilesSelected(e.target.files)}
+                />
+
+                {photoError && <FieldError message={photoError} />}
+
+                {photos.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-3">
+                    {photos.map((file, i) => (
+                      <div
+                        key={`${file.name}-${i}`}
+                        className="relative group aspect-square rounded-lg overflow-hidden border border-white/10 bg-white/5"
+                      >
+                        {previews[i] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={previews[i]}
+                            alt={file.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white/40">
+                            <ImageIcon className="w-6 h-6" />
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(i)}
+                          aria-label={`Remove ${file.name}`}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 hover:bg-rose-600 text-white flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/80 to-transparent px-1.5 py-1">
+                          <p className="text-white/80 text-[10px] truncate">
+                            {formatBytes(file.size)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* ── Submit ──────────────────────────────────────────────── */}

@@ -137,13 +137,13 @@ export default function RootLayout({
               logo: "https://ads.cuhvet.com/logo.png",
               description:
                 "Professional modeling agency helping aspiring models launch and grow their careers with full support, training, and promotion.",
-              email: "hello@cuhvet.com",
+              email: "yaros.adsperformance@gmail.com",
               sameAs: [
                 "https://instagram.com/cuhvet",
               ],
               contactPoint: {
                 "@type": "ContactPoint",
-                email: "hello@cuhvet.com",
+                email: "yaros.adsperformance@gmail.com",
                 contactType: "Customer Service",
                 availableLanguage: "English",
               },

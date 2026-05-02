@@ -61,10 +61,10 @@ export default function Footer() {
             hours.
           </p>
           <a
-            href="mailto:hello@cuhvet.com"
-            className="text-rose-400 hover:text-rose-300 font-semibold text-lg transition-colors"
+            href="mailto:yaros.adsperformance@gmail.com"
+            className="text-rose-400 hover:text-rose-300 font-semibold text-lg transition-colors break-all"
           >
-            hello@cuhvet.com
+            yaros.adsperformance@gmail.com
           </a>
         </div>
       </div>

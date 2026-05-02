@@ -184,10 +184,10 @@ export default function PrivacyPolicy() {
               <p className="mt-4">
                 To exercise these rights, contact us at{" "}
                 <a
-                  href="mailto:info@cuhvet.com"
-                  className="text-rose-400 hover:text-rose-300 underline"
+                  href="mailto:yaros.adsperformance@gmail.com"
+                  className="text-rose-400 hover:text-rose-300 underline break-all"
                 >
-                  info@cuhvet.com
+                  yaros.adsperformance@gmail.com
                 </a>
               </p>
             </section>
@@ -265,10 +265,10 @@ export default function PrivacyPolicy() {
                 <p>
                   Email:{" "}
                   <a
-                    href="mailto:info@cuhvet.com"
-                    className="text-rose-400 hover:text-rose-300"
+                    href="mailto:yaros.adsperformance@gmail.com"
+                    className="text-rose-400 hover:text-rose-300 break-all"
                   >
-                    info@cuhvet.com
+                    yaros.adsperformance@gmail.com
                   </a>
                 </p>
                 <p>Website: ads.cuhvet.com</p>
