@@ -214,10 +214,10 @@ export default function HeroSection() {
             <iframe
               width="100%"
               height="100%"
-              src="https://www.youtube.com/embed/hkOEd7exTAA?autoplay=1"
+              src="https://player.vimeo.com/video/1190213545?autoplay=1"
               title="How it works"
               frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
               className="w-full h-full"
             />

@@ -198,10 +198,10 @@ export default function TestimonialsSection() {
               <iframe
                 width="100%"
                 height="100%"
-                src="https://www.youtube.com/embed/hkOEd7exTAA"
+                src="https://player.vimeo.com/video/1190213545"
                 title="Model testimonial video"
                 frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
                 className="absolute inset-0 w-full h-full"
               />
