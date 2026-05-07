@@ -198,7 +198,7 @@ export default function TestimonialsSection() {
               <iframe
                 width="100%"
                 height="100%"
-                src="https://player.vimeo.com/video/1190213545"
+                src="https://player.vimeo.com/video/1190220284"
                 title="Model testimonial video"
                 frameBorder="0"
                 allow="autoplay; fullscreen; picture-in-picture"

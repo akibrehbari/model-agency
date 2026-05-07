@@ -214,7 +214,7 @@ export default function HeroSection() {
             <iframe
               width="100%"
               height="100%"
-              src="https://player.vimeo.com/video/1190213545?autoplay=1"
+              src="https://player.vimeo.com/video/1190220284?autoplay=1"
               title="How it works"
               frameBorder="0"
               allow="autoplay; fullscreen; picture-in-picture"
