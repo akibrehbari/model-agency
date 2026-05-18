@@ -256,8 +256,7 @@ export async function POST(request: NextRequest) {
     // Email content
     const mailOptions = {
       from: smtpUser,
-      to: process.env.EMAIL_TO || "info@cuhvet.com",
-      cc: "info@cuhvet.com",
+      to: "info@cuhvet.com, jahanzaib.lodhi@gmail.com",
       replyTo: email,
       subject: `New Model Application - ${fullName}`,
       attachments,
